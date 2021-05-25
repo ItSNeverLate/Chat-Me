@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         context: context,
                         type: CoolAlertType.error,
                         title: 'Error',
-                        text: 'Invalid username and/or password.',
+                        text: e.toString(),
                         loopAnimation: true,
                       );
                     } finally {

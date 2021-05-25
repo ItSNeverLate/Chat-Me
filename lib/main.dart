@@ -23,6 +23,10 @@ class MyApp extends StatelessWidget {
         if (snapshot.hasData) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+                primaryColor: Color(0xFF310F33),
+                primaryColorLight: Color(0xFF7C3085),
+                accentColor: Color(0xFFE01E5A)),
             initialRoute: WelcomeScreen.id,
             routes: {
               WelcomeScreen.id: (context) => WelcomeScreen(),

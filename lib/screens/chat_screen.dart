@@ -1,6 +1,10 @@
+import 'package:chat_me/components/MessageBubble.dart';
 import 'package:chat_me/screens/welcome_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 class ChatScreen extends StatefulWidget {
   static const String id = 'chat_screen';
@@ -11,6 +15,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _firebaseAuth = FirebaseAuth.instance;
+  final _firebaseStore = FirebaseFirestore.instance;
   final _messageTextController = TextEditingController();
   String message = '';
 
@@ -40,7 +45,34 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisSize: MainAxisSize.max,
           children: [
             Expanded(
-              child: Container(),
+              child: StreamBuilder<QuerySnapshot>(
+                  stream: _firebaseStore
+                      .collection('messages')
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return ListView.builder(
+                          reverse: true,
+                          itemCount: snapshot.data.docs.length,
+                          itemBuilder: (context, index) {
+                            final message =
+                                snapshot.data.docs[index]['message'];
+                            final isMine = snapshot.data.docs[index]
+                                    ['sender'] ==
+                                _firebaseAuth.currentUser.email;
+                            final timestamp =
+                                snapshot.data.docs[index]['timestamp'];
+                            return MessageBubble(
+                              message: message,
+                              timestamp: timestamp,
+                              isMine: isMine,
+                            );
+                          });
+                    }
+
+                    return CupertinoActivityIndicator();
+                  }),
             ),
             Padding(
               padding:
@@ -57,12 +89,26 @@ class _ChatScreenState extends State<ChatScreen> {
                         onChanged: (value) => message = value),
                   ),
                   IconButton(
-                      icon: Icon(Icons.send),
-                      onPressed: () {
-                        print(message);
+                    icon: Icon(Icons.send),
+                    color: Theme.of(context).primaryColor,
+                    iconSize: 30.0,
+                    onPressed: () async {
+                      try {
+                        CollectionReference messages =
+                            _firebaseStore.collection('messages');
+                        await messages.add({
+                          'message': message.trim(),
+                          'sender': _firebaseAuth.currentUser.email,
+                          'timestamp': Timestamp.now()
+                        });
+
                         message = '';
                         _messageTextController.clear();
-                      }),
+
+                        QuerySnapshot snapshot = await messages.get();
+                      } catch (e) {}
+                    },
+                  ),
                 ],
               ),
             )
